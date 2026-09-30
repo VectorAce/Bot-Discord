@@ -58,3 +58,38 @@ Clone this repository:
 ```bash
 git clone [https://github.com/VectorAce/Bot-Discord.git](https://github.com/VectorAce/Bot-Discord.git)
 cd Bot-Discord
+```
+Install the dependencies:
+```bash
+npm install
+```
+
+### 3. Configuration
+
+Open index.js and update the CONFIG object with your Bot Token and Channel ID:
+```bash
+const CONFIG = {
+    TOKEN: 'YOUR_DISCORD_BOT_TOKEN', 
+    PREFIX: '!',
+    CHANNEL_NOTIF: 'YOUR_NOTIFICATION_CHANNEL_ID'
+};
+```
+
+### 4. Running the Bot
+
+Start the bot locally or on your host (e.g., Pterodactyl):
+```bash
+npm start
+```
+
+---
+
+## 📝 Usage
+
+Type `!menu` or `!help` in any channel where the bot has access to display the Interactive Dashboard.
+
+---
+
+## 📄 License
+
+This project is open-source and available under the MIT License.
