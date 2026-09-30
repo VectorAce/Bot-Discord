@@ -58,6 +58,3 @@ Clone this repository:
 ```bash
 git clone [https://github.com/VectorAce/Bot-Discord.git](https://github.com/VectorAce/Bot-Discord.git)
 cd Bot-Discord
-
-Install the dependencies:
-npm install
