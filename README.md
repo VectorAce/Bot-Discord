@@ -90,6 +90,10 @@ Type `!menu` or `!help` in any channel where the bot has access to display the I
 
 ---
 
+> [!NOTE]
+> **Disclaimer & Localization Notice:**
+> This open-source project is configured by default to scrape and utilize public data sources tailored for **Indonesia** (such as BMKG earthquake alerts and regional commodity market feeds). If you wish to adapt this bot for another country or use your own custom datasets/APIs, you are welcome to modify the API endpoints, scraping targets, and parser logic inside `index.js`.
+
 ## 📄 License
 
 This project is open-source and available under the MIT License.
