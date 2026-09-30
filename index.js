@@ -15,12 +15,12 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 // ==========================================
-// KONFIGURASI BOT
+// BOT CONFIGURATION
 // ==========================================
 const CONFIG = {
     TOKEN: 'YOUR_DISCORD_BOT_TOKEN', 
-    PREFIX: '!', // (Or you can edit with what you prefer)
-    CHANNEL_NOTIF: 'YOUR_NOTIFICATION_CHANNEL_ID' // ID channel notifikasi gempa
+    PREFIX: '!', // Command prefix
+    CHANNEL_NOTIF: 'YOUR_NOTIFICATION_CHANNEL_ID' // Earthquake notification channel ID
 };
 
 const client = new Client({
@@ -31,10 +31,10 @@ const client = new Client({
     ]
 });
 
-// Variable penyimpan ID gempa terakhir agar bebas spam
+// Cache variable for tracking the last processed earthquake to prevent spam
 let lastEarthquake = '';
 
-// Daftar Alias Game Populer
+// Dictionary of popular game aliases for quick searching
 const GAME_ALIASES = {
     'gta 5': 'Grand Theft Auto V',
     'gta v': 'Grand Theft Auto V',
@@ -61,7 +61,7 @@ const GAME_ALIASES = {
 };
 
 // ==========================================
-// FITUR 1: AUTO-CHECK GEMPA BMKG (BEBAS SPAM)
+// FEATURE 1: REAL-TIME BMKG EARTHQUAKE CHECK
 // ==========================================
 async function checkBMKG() {
     try {
@@ -71,26 +71,27 @@ async function checkBMKG() {
         const gempa = response.data.Infogempa.gempa;
         const eventId = `${gempa.Tanggal}-${gempa.Jam}-${gempa.Wilayah}`;
 
+        // Skip execution if this earthquake event was already notified
         if (eventId === lastEarthquake) return;
         lastEarthquake = eventId;
         
         const channel = client.channels.cache.get(CONFIG.CHANNEL_NOTIF);
         if (channel) {
             const embed = new EmbedBuilder()
-                .setTitle('🚨 INFO GEMPA TERKINI (BMKG)')
+                .setTitle('🚨 LATEST EARTHQUAKE ALERT (BMKG)')
                 .setColor('#FF0000')
                 .setThumbnail(`https://data.bmkg.go.id/DataMKG/TEWS/${gempa.Shakemap}`)
                 .addFields(
-                    { name: 'Waktu', value: `${gempa.Tanggal} | ${gempa.Jam}`, inline: true },
-                    { name: 'Magnitudo', value: `**${gempa.Magnitude} SR**`, inline: true },
-                    { name: 'Kedalaman', value: gempa.Kedalaman, inline: true },
-                    { name: 'Lokasi', value: gempa.Wilayah, inline: false },
-                    { name: 'Potensi Tsunami', value: gempa.Potensi, inline: false }
+                    { name: 'Time', value: `${gempa.Tanggal} | ${gempa.Jam}`, inline: true },
+                    { name: 'Magnitude', value: `**${gempa.Magnitude} SR**`, inline: true },
+                    { name: 'Depth', value: gempa.Kedalaman, inline: true },
+                    { name: 'Location', value: gempa.Wilayah, inline: false },
+                    { name: 'Tsunami Potential', value: gempa.Potensi, inline: false }
                 )
-                .setFooter({ text: 'Sumber: BMKG Indonesia' })
+                .setFooter({ text: 'Source: BMKG Indonesia' })
                 .setTimestamp();
 
-            await channel.send({ content: '⚠️ **Peringatan Gempa Baru Terdeteksi!**', embeds: [embed] });
+            await channel.send({ content: '⚠️ **New Earthquake Event Detected!**', embeds: [embed] });
         }
     } catch (error) {
         console.error('Error fetching BMKG data:', error.message);
@@ -98,52 +99,52 @@ async function checkBMKG() {
 }
 
 client.on('clientReady', () => {
-    console.log(`✅ Bot Berhasil Login sebagai ${client.user.tag}`);
+    console.log(`✅ Bot successfully logged in as ${client.user.tag}`);
     checkBMKG();
-    setInterval(checkBMKG, 3 * 60 * 1000); // Check tiap 3 menit
+    setInterval(checkBMKG, 3 * 60 * 1000); // Periodically check every 3 minutes
 });
 
 // ==========================================
-// HELPER KOMPONEN DASHBOARD (BUTTONS & DROPDOWN)
+// INTERACTIVE DASHBOARD COMPONENTS HELPER
 // ==========================================
 function getMainMenuComponents() {
     const selectMenu = new StringSelectMenuBuilder()
         .setCustomId('main_menu_select')
-        .setPlaceholder('👇 Pilih Fitur / Informasi di sini...')
+        .setPlaceholder('👇 Choose a feature or service here...')
         .addOptions([
             {
-                label: 'Info Gempa Terkini',
-                description: 'Cek laporan gempa bumi dari BMKG',
+                label: 'Latest Earthquake Alert',
+                description: 'Fetch real-time earthquake reports from BMKG',
                 value: 'btn_gempa',
                 emoji: '🚨'
             },
             {
-                label: 'Cari Info Anime',
-                description: 'Cek skor, episode, & ringkasan anime',
+                label: 'Search Anime Details',
+                description: 'Lookup scores, episodes, and summaries',
                 value: 'btn_search_anime',
                 emoji: '🎌'
             },
             {
-                label: 'Berita Tekno Terkini',
-                description: '5 berita teknologi populer hari ini',
+                label: 'Tech News Today',
+                description: 'Read top 5 popular tech news headlines',
                 value: 'btn_berita_tekno',
                 emoji: '📰'
             },
             {
-                label: 'Cari Berita Spesifik',
-                description: 'Cari berita berdasarkan kata kunci bebas',
+                label: 'Search Specific News',
+                description: 'Find news articles by custom query',
                 value: 'btn_search_berita',
                 emoji: '🔍'
             },
             {
-                label: 'Cari Info Game Steam',
-                description: 'Cek spesifikasi PC & harga game Steam',
+                label: 'Steam Game Lookup',
+                description: 'Check PC hardware specs & Steam pricing',
                 value: 'btn_search_game',
                 emoji: '🎮'
             },
             {
-                label: 'Cari Harga Bahan Makanan',
-                description: 'Cek nominal harga pasar bahan pokok per daerah',
+                label: 'Commodity Price Scraper',
+                description: 'Fetch regional market prices for basic food items',
                 value: 'btn_search_harga',
                 emoji: '🛒'
             }
@@ -154,22 +155,22 @@ function getMainMenuComponents() {
     const rowButtons = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId('btn_gempa')
-            .setLabel('Info Gempa')
+            .setLabel('Earthquake Info')
             .setStyle(ButtonStyle.Danger)
             .setEmoji('🚨'),
         new ButtonBuilder()
             .setCustomId('btn_search_anime')
-            .setLabel('Cari Anime')
+            .setLabel('Search Anime')
             .setStyle(ButtonStyle.Primary)
             .setEmoji('🎌'),
         new ButtonBuilder()
             .setCustomId('btn_berita_tekno')
-            .setLabel('Berita Tekno')
+            .setLabel('Tech News')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji('📰'),
         new ButtonBuilder()
             .setCustomId('btn_search_harga')
-            .setLabel('Harga Pangan')
+            .setLabel('Food Prices')
             .setStyle(ButtonStyle.Success)
             .setEmoji('🛒'),
         new ButtonBuilder()
@@ -183,7 +184,7 @@ function getMainMenuComponents() {
 }
 
 // ==========================================
-// MESSAGE COMMANDS (PREFIX)
+// MESSAGE COMMAND HANDLER (PREFIX-BASED)
 // ==========================================
 client.on('messageCreate', async (message) => {
     if (message.author.bot || !message.content.startsWith(CONFIG.PREFIX)) return;
@@ -194,16 +195,16 @@ client.on('messageCreate', async (message) => {
     // COMMAND: !menu / !help / !start
     if (['help', 'menu', 'start'].includes(command)) {
         const embed = new EmbedBuilder()
-            .setTitle('🤖 Dashboard Interaktif Bot Multi-Fungsi')
-            .setDescription('Silakan klik **Tombol** atau pilih opsi dari **Dropdown Menu** di bawah untuk mengakses fitur tanpa perlu mengetik command manual!')
+            .setTitle('🤖 Interactive Multi-Utility Dashboard')
+            .setDescription('Click any **Button** or select an option from the **Dropdown Menu** below to trigger features effortlessly!')
             .setColor('#5865F2')
-            .setFooter({ text: 'Gunakan komponen di bawah untuk akses cepat' });
+            .setFooter({ text: 'Use the interactive components below for instant action' });
 
         return message.reply({ embeds: [embed], components: getMainMenuComponents() });
     }
 
     if (command === 'ping') {
-        return message.reply(`🏓 Pong! Latency bot: **${Date.now() - message.createdTimestamp}ms**`);
+        return message.reply(`🏓 Pong! Current latency: **${Date.now() - message.createdTimestamp}ms**`);
     }
 });
 
@@ -212,35 +213,35 @@ client.on('messageCreate', async (message) => {
 // ==========================================
 client.on('interactionCreate', async (interaction) => {
     
-    // 1. HANDLER SELECT MENU & BUTTONS
+    // 1. SELECT MENU & BUTTON ACTIONS HANDLER
     if (interaction.isStringSelectMenu() || interaction.isButton()) {
         const customId = interaction.isStringSelectMenu() ? interaction.values[0] : interaction.customId;
 
-        // Action: Soft Restart Bot + Auto-Restore Dashboard
+        // Action: Soft Restart Bot Connection + Auto-Restore Dashboard (Admin-Only)
         if (customId === 'btn_restart') {
             if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
                 return interaction.reply({ 
-                    content: '❌ Kamu tidak memiliki izin (Administrator) untuk merestart bot!', 
+                    content: '❌ You lack Administrator permissions to restart the bot!', 
                     flags: 64
                 });
             }
 
             await interaction.reply({ 
-                content: '🔄 **Sedang merestart koneksi bot...** Mohon tunggu beberapa detik!' 
+                content: '🔄 **Restarting bot connection...** Please wait a few seconds!' 
             });
 
-            console.log(`⚠️ Bot sedang melakukan soft-restart oleh ${interaction.user.tag}`);
+            console.log(`⚠️ Soft-restart initiated by ${interaction.user.tag}`);
 
             try {
                 await client.destroy();
                 await client.login(CONFIG.TOKEN);
-                console.log('✅ Bot berhasil login kembali!');
+                console.log('✅ Bot successfully re-logged in!');
 
                 const restoredEmbed = new EmbedBuilder()
-                    .setTitle('🤖 Dashboard Interaktif Bot Multi-Fungsi')
-                    .setDescription('✅ **Bot berhasil di-restart dan sudah online kembali!**\n\nSilakan klik **Tombol** atau pilih opsi dari **Dropdown Menu** di bawah untuk mengakses fitur kembali:')
+                    .setTitle('🤖 Interactive Multi-Utility Dashboard')
+                    .setDescription('✅ **Bot successfully reconnected and is back online!**\n\nClick any **Button** or pick an option from the **Dropdown Menu** below to continue using features:')
                     .setColor('#00E676')
-                    .setFooter({ text: 'Status: Online & Siap Digunakan' });
+                    .setFooter({ text: 'Status: Online & Ready' });
 
                 return interaction.editReply({ 
                     content: '', 
@@ -249,14 +250,14 @@ client.on('interactionCreate', async (interaction) => {
                 });
 
             } catch (err) {
-                console.error('❌ Gagal melakukan restart bot:', err.message);
+                console.error('❌ Failed to restart bot:', err.message);
                 return interaction.editReply({ 
-                    content: '❌ Gagal melakukan restart koneksi bot.' 
+                    content: '❌ Failed to restart bot connection.' 
                 });
             }
         }
 
-        // Action: Check Gempa
+        // Action: Check Earthquake Data
         if (customId === 'btn_gempa') {
             await interaction.deferReply({ ephemeral: false });
             try {
@@ -264,34 +265,34 @@ client.on('interactionCreate', async (interaction) => {
                 const gempa = data.Infogempa.gempa;
 
                 const embed = new EmbedBuilder()
-                    .setTitle('⚠️ Info Gempa Bumi Terkini (BMKG)')
+                    .setTitle('⚠️ Latest Earthquake Report (BMKG)')
                     .setColor('#FF0000')
                     .setThumbnail(`https://data.bmkg.go.id/DataMKG/TEWS/${gempa.Shakemap}`)
                     .addFields(
-                        { name: '📅 Waktu', value: `${gempa.Tanggal} - ${gempa.Jam}`, inline: true },
-                        { name: '💥 Magnitudo', value: `**${gempa.Magnitude} SR**`, inline: true },
-                        { name: '🌊 Kedalaman', value: gempa.Kedalaman, inline: true },
-                        { name: '📍 Lokasi', value: `${gempa.Wilayah}\n(${gempa.Coordinates})`, inline: false },
-                        { name: '🚨 Potensi', value: `**${gempa.Potensi}**`, inline: false }
+                        { name: '📅 Time', value: `${gempa.Tanggal} - ${gempa.Jam}`, inline: true },
+                        { name: '💥 Magnitude', value: `**${gempa.Magnitude} SR**`, inline: true },
+                        { name: '🌊 Depth', value: gempa.Kedalaman, inline: true },
+                        { name: '📍 Location', value: `${gempa.Wilayah}\n(${gempa.Coordinates})`, inline: false },
+                        { name: '🚨 Potential', value: `**${gempa.Potensi}**`, inline: false }
                     )
-                    .setFooter({ text: 'Sumber: BMKG Indonesia' });
+                    .setFooter({ text: 'Source: BMKG Indonesia' });
 
                 return interaction.editReply({ embeds: [embed], components: getMainMenuComponents() });
             } catch (err) {
-                return interaction.editReply({ content: '❌ Gagal mengambil data gempa.' });
+                return interaction.editReply({ content: '❌ Failed to fetch earthquake data.' });
             }
         }
 
-        // Action Pop-Up Form: Cari Anime
+        // Action Pop-Up Form: Search Anime
         if (customId === 'btn_search_anime') {
             const modal = new ModalBuilder()
                 .setCustomId('modal_anime')
-                .setTitle('🎌 Cari Info Anime');
+                .setTitle('🎌 Search Anime Details');
 
             const animeInput = new TextInputBuilder()
                 .setCustomId('input_anime')
-                .setLabel('Judul Anime')
-                .setPlaceholder('Contoh: Attack on Titan, Naruto, One Piece')
+                .setLabel('Anime Title')
+                .setPlaceholder('Example: Attack on Titan, Naruto, One Piece')
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true);
 
@@ -299,7 +300,7 @@ client.on('interactionCreate', async (interaction) => {
             return interaction.showModal(modal);
         }
 
-        // Action: Berita Tekno
+        // Action: Tech News Headlines
         if (customId === 'btn_berita_tekno') {
             await interaction.deferReply();
             try {
@@ -316,27 +317,27 @@ client.on('interactionCreate', async (interaction) => {
                 });
 
                 const embed = new EmbedBuilder()
-                    .setTitle('🌐 Berita Teknologi Terkini')
+                    .setTitle('🌐 Top Technology News Headlines')
                     .setColor('#4285F4')
                     .setDescription(newsList.join('\n\n'))
-                    .setFooter({ text: 'Sumber: Google News Indonesia' });
+                    .setFooter({ text: 'Source: Google News Indonesia' });
 
                 return interaction.editReply({ embeds: [embed], components: getMainMenuComponents() });
             } catch (err) {
-                return interaction.editReply({ content: '❌ Gagal mengambil berita.' });
+                return interaction.editReply({ content: '❌ Failed to fetch news headlines.' });
             }
         }
 
-        // Action Pop-Up Form: Cari Berita
+        // Action Pop-Up Form: Search Custom News Topic
         if (customId === 'btn_search_berita') {
             const modal = new ModalBuilder()
                 .setCustomId('modal_berita')
-                .setTitle('🔍 Cari Berita');
+                .setTitle('🔍 Search News Headlines');
 
             const queryInput = new TextInputBuilder()
                 .setCustomId('input_query')
-                .setLabel('Masukkan Kata Kunci Berita')
-                .setPlaceholder('Contoh: AI, Nvidia, Timnas, Crypto')
+                .setLabel('News Keywords')
+                .setPlaceholder('Example: AI, Nvidia, Esports, Crypto')
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true);
 
@@ -344,16 +345,16 @@ client.on('interactionCreate', async (interaction) => {
             return interaction.showModal(modal);
         }
 
-        // Action Pop-Up Form: Cari Game Steam
+        // Action Pop-Up Form: Search Steam Game
         if (customId === 'btn_search_game') {
             const modal = new ModalBuilder()
                 .setCustomId('modal_game')
-                .setTitle('🎮 Cari Spesifikasi Game Steam');
+                .setTitle('🎮 Steam Game & Specs Lookup');
 
             const gameInput = new TextInputBuilder()
                 .setCustomId('input_game')
-                .setLabel('Nama Game / Alias')
-                .setPlaceholder('Contoh: GTA V, Cyberpunk 2077, CS2')
+                .setLabel('Game Title or Alias')
+                .setPlaceholder('Example: GTA V, Cyberpunk 2077, CS2')
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true);
 
@@ -361,23 +362,23 @@ client.on('interactionCreate', async (interaction) => {
             return interaction.showModal(modal);
         }
 
-        // Action Pop-Up Form: Cari Harga Pangan
+        // Action Pop-Up Form: Search Commodity Price
         if (customId === 'btn_search_harga') {
             const modal = new ModalBuilder()
                 .setCustomId('modal_harga')
-                .setTitle('🛒 Cek Harga Bahan Pangan');
+                .setTitle('🛒 Check Commodity Prices');
 
             const itemInput = new TextInputBuilder()
                 .setCustomId('input_item')
-                .setLabel('Nama Bahan Makanan / Komoditas')
-                .setPlaceholder('Contoh: Beras, Daging Ayam, Telur, Cabai')
+                .setLabel('Food Commodity Item')
+                .setPlaceholder('Example: Beras, Daging Ayam, Telur, Cabai')
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true);
 
             const regionInput = new TextInputBuilder()
                 .setCustomId('input_region')
-                .setLabel('Wilayah / Daerah (Opsional)')
-                .setPlaceholder('Contoh: Jawa Tengah, DKI Jakarta, Surabaya')
+                .setLabel('Region / Province (Optional)')
+                .setPlaceholder('Example: Jawa Tengah, DKI Jakarta, Surabaya')
                 .setStyle(TextInputStyle.Short)
                 .setRequired(false);
 
@@ -389,14 +390,15 @@ client.on('interactionCreate', async (interaction) => {
         }
     }
 
-    // 2. HANDLER SUBMIT FORM POP-UP (MODAL)
+    // 2. MODAL FORM SUBMISSION HANDLER
     if (interaction.isModalSubmit()) {
         
-        // Form Cari Anime Submit (Dual API: Jikan + Kitsu Fallback)
+        // Anime Search Submission (Dual API Strategy: Jikan + Fallback to Kitsu)
         if (interaction.customId === 'modal_anime') {
             const query = interaction.fields.getTextInputValue('input_anime').trim();
             await interaction.deferReply();
 
+            // Try Primary API: MyAnimeList (Jikan v4 API)
             try {
                 const { data } = await axios.get(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=1`, {
                     headers: { 'User-Agent': 'Mozilla/5.0' }
@@ -410,24 +412,25 @@ client.on('interactionCreate', async (interaction) => {
                         .setColor('#2E51A2')
                         .setThumbnail(anime.images.jpg.image_url)
                         .addFields(
-                            { name: 'EPISODE', value: `${anime.episodes || '??'} eps`, inline: true },
+                            { name: 'EPISODES', value: `${anime.episodes || '??'} eps`, inline: true },
                             { name: 'SCORE', value: `⭐ ${anime.score || 'N/A'}`, inline: true },
                             { name: 'STATUS', value: anime.status || '-', inline: true },
-                            { name: 'GENRE', value: anime.genres ? anime.genres.map(g => g.name).join(', ') : '-', inline: false },
-                            { name: 'RINGKASAN', value: anime.synopsis ? anime.synopsis.slice(0, 250) + '...' : 'Tidak ada deskripsi.' }
+                            { name: 'GENRES', value: anime.genres ? anime.genres.map(g => g.name).join(', ') : '-', inline: false },
+                            { name: 'SYNOPSIS', value: anime.synopsis ? anime.synopsis.slice(0, 250) + '...' : 'No synopsis available.' }
                         )
                         .setFooter({ text: 'Source: MyAnimeList' });
 
                     return interaction.editReply({ embeds: [embed], components: getMainMenuComponents() });
                 }
             } catch (e) {
-                console.log('Jikan API limit/error, mencoba Kitsu API fallback...');
+                console.log('Jikan API rate-limited or unavailable. Fallback to Kitsu API...');
             }
 
+            // Fallback API: Kitsu.io API
             try {
                 const { data } = await axios.get(`https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(query)}&page[limit]=1`);
                 if (!data.data || data.data.length === 0) {
-                    return interaction.editReply(`❌ Anime **"${query}"** tidak ditemukan!`);
+                    return interaction.editReply(`❌ Anime title **"${query}"** was not found!`);
                 }
 
                 const anime = data.data[0].attributes;
@@ -437,20 +440,20 @@ client.on('interactionCreate', async (interaction) => {
                     .setColor('#FF6B6B')
                     .setThumbnail(anime.posterImage ? anime.posterImage.medium : '')
                     .addFields(
-                        { name: 'EPISODE', value: `${anime.episodeCount || '??'} eps`, inline: true },
+                        { name: 'EPISODES', value: `${anime.episodeCount || '??'} eps`, inline: true },
                         { name: 'SCORE', value: `⭐ ${anime.averageRating ? (anime.averageRating / 20).toFixed(2) : 'N/A'}`, inline: true },
                         { name: 'STATUS', value: anime.status || '-', inline: true },
-                        { name: 'RINGKASAN', value: anime.synopsis ? anime.synopsis.slice(0, 250) + '...' : 'Tidak ada deskripsi.' }
+                        { name: 'SYNOPSIS', value: anime.synopsis ? anime.synopsis.slice(0, 250) + '...' : 'No synopsis available.' }
                     )
                     .setFooter({ text: 'Source: Kitsu.io' });
 
                 return interaction.editReply({ embeds: [embed], components: getMainMenuComponents() });
             } catch (err) {
-                return interaction.editReply({ content: '❌ Gagal mengambil data anime.' });
+                return interaction.editReply({ content: '❌ Failed to retrieve anime details.' });
             }
         }
 
-        // Form Cari Berita Submit
+        // Custom News Search Submission
         if (interaction.customId === 'modal_berita') {
             const searchQuery = interaction.fields.getTextInputValue('input_query');
             await interaction.deferReply();
@@ -469,18 +472,18 @@ client.on('interactionCreate', async (interaction) => {
                 });
 
                 const embed = new EmbedBuilder()
-                    .setTitle(`🌐 Berita Terkini: ${searchQuery.toUpperCase()}`)
+                    .setTitle(`🌐 News Search: ${searchQuery.toUpperCase()}`)
                     .setColor('#4285F4')
                     .setDescription(newsList.join('\n\n'))
-                    .setFooter({ text: 'Sumber: Google News Indonesia' });
+                    .setFooter({ text: 'Source: Google News Indonesia' });
 
                 return interaction.editReply({ embeds: [embed], components: getMainMenuComponents() });
             } catch (err) {
-                return interaction.editReply({ content: '❌ Gagal mencari berita.' });
+                return interaction.editReply({ content: '❌ Failed to search news headlines.' });
             }
         }
 
-        // Form Cari Game Submit
+        // Steam Game Search Submission
         if (interaction.customId === 'modal_game') {
             const rawQuery = interaction.fields.getTextInputValue('input_game').toLowerCase().trim();
             const query = GAME_ALIASES[rawQuery] || rawQuery;
@@ -491,7 +494,7 @@ client.on('interactionCreate', async (interaction) => {
                 const { data: searchData } = await axios.get(searchUrl);
 
                 if (!searchData.items || searchData.items.length === 0) {
-                    return interaction.editReply(`❌ Game **"${query}"** tidak ditemukan di Steam.`);
+                    return interaction.editReply(`❌ Game **"${query}"** was not found on Steam.`);
                 }
 
                 const appId = searchData.items[0].id;
@@ -499,8 +502,9 @@ client.on('interactionCreate', async (interaction) => {
                 const { data: detailData } = await axios.get(detailUrl);
                 const gameInfo = detailData[appId].data;
 
+                // Format hardware specifications and sanitize HTML tags
                 const parseCleanSpecs = (html) => {
-                    if (!html) return 'Tidak tersedia.';
+                    if (!html) return 'Not available.';
                     let text = html.replace(/<strong>Minimum:<\/strong>|<strong>Recommended:<\/strong>/gi, '')
                         .replace(/<br\s*[\/]?>/gi, '\n').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
 
@@ -512,13 +516,13 @@ client.on('interactionCreate', async (interaction) => {
                         cleanLine = cleanLine.replace(/(OS|Processor|CPU|Memory|RAM|Graphics|GPU|DirectX|Storage|Sound Card):/gi, '**$1:**');
                         result.push(cleanLine);
                     }
-                    return result.join('\n') || 'Tidak tersedia.';
+                    return result.join('\n') || 'Not available.';
                 };
 
                 let minSpecs = parseCleanSpecs(gameInfo.pc_requirements?.minimum).slice(0, 990);
                 let recSpecs = parseCleanSpecs(gameInfo.pc_requirements?.recommended).slice(0, 990);
 
-                let hargaFormatted = gameInfo.is_free ? 'GRATIS / FREE' : (gameInfo.price_overview?.final_formatted || 'Lihat di Steam');
+                let hargaFormatted = gameInfo.is_free ? 'GRATIS / FREE' : (gameInfo.price_overview?.final_formatted || 'View on Steam');
 
                 const embed = new EmbedBuilder()
                     .setTitle(`🎮 ${gameInfo.name}`)
@@ -526,21 +530,21 @@ client.on('interactionCreate', async (interaction) => {
                     .setColor('#1b2838')
                     .setThumbnail(gameInfo.header_image)
                     .addFields(
-                        { name: '💰 HARGA', value: hargaFormatted, inline: true },
-                        { name: '📅 RILIS', value: gameInfo.release_date ? gameInfo.release_date.date : 'TBA', inline: true },
+                        { name: '💰 PRICE', value: hargaFormatted, inline: true },
+                        { name: '📅 RELEASE', value: gameInfo.release_date ? gameInfo.release_date.date : 'TBA', inline: true },
                         { name: '🎭 GENRE', value: gameInfo.genres ? gameInfo.genres.map(g => g.description).join(', ') : '-', inline: true },
                         { name: '💻 MINIMUM SPECS', value: minSpecs, inline: false },
                         { name: '🚀 RECOMMENDED SPECS', value: recSpecs, inline: false }
                     )
-                    .setFooter({ text: 'Data resmi dari Steam Store Indonesia' });
+                    .setFooter({ text: 'Data sourced directly from Steam Store' });
 
                 return interaction.editReply({ embeds: [embed], components: getMainMenuComponents() });
             } catch (err) {
-                return interaction.editReply({ content: '❌ Gagal mengambil data game dari Steam.' });
+                return interaction.editReply({ content: '❌ Failed to retrieve game specs from Steam.' });
             }
         }
 
-        // Form Cari Harga Pangan Submit
+        // Commodity Price Scraper Submission
         if (interaction.customId === 'modal_harga') {
             const itemQuery = interaction.fields.getTextInputValue('input_item').trim();
             const regionQuery = interaction.fields.getTextInputValue('input_region').trim() || 'Indonesia';
@@ -555,18 +559,20 @@ client.on('interactionCreate', async (interaction) => {
                 let extractedPrices = [];
                 $('item').slice(0, 10).each((i, el) => {
                     const title = $(el).find('title').text().trim();
-                    const source = $(el).find('source').text().trim() || 'Pantauan Pasar';
+                    const source = $(el).find('source').text().trim() || 'Market Watch';
                     
                     const priceMatch = title.match(/Rp\s*[\d\.\,]+\s*(ribu|rb|juta|jt)?/gi);
 
                     if (priceMatch) {
                         let formattedPrices = priceMatch.map(p => {
                             let clean = p.replace(/\s+/g, ' ').trim();
+                            // Parse 'ribu / rb' strings into full numeric currency formats
                             if (/ribu|rb/i.test(clean)) {
                                 let numStr = clean.replace(/Rp\s*/i, '').replace(/ribu|rb/i, '').trim().replace(',', '.');
                                 let val = parseFloat(numStr) * 1000;
                                 if (!isNaN(val)) return `Rp ${val.toLocaleString('id-ID')}`;
                             }
+                            // Parse 'juta / jt' strings into full numeric currency formats
                             if (/juta|jt/i.test(clean)) {
                                 let numStr = clean.replace(/Rp\s*/i, '').replace(/juta|jt/i, '').trim().replace(',', '.');
                                 let val = parseFloat(numStr) * 1000000;
@@ -583,44 +589,49 @@ client.on('interactionCreate', async (interaction) => {
                 if (extractedPrices.length > 0) {
                     const uniqueResults = [...new Set(extractedPrices)].slice(0, 3);
                     const embed = new EmbedBuilder()
-                        .setTitle(`🛒 Hasil Scraping Harga Pasar Real-Time`)
+                        .setTitle(`🛒 Real-Time Commodity Price Scraper`)
                         .setColor('#00E676')
                         .addFields(
-                            { name: '📍 Wilayah', value: regionQuery.toUpperCase(), inline: true },
-                            { name: '🌾 Komoditas', value: itemQuery.toUpperCase(), inline: true },
-                            { name: '💰 Laporan Nominal Harga', value: uniqueResults.join('\n\n'), inline: false }
+                            { name: '📍 Region', value: regionQuery.toUpperCase(), inline: true },
+                            { name: '🌾 Commodity', value: itemQuery.toUpperCase(), inline: true },
+                            { name: '💰 Price Reports', value: uniqueResults.join('\n\n'), inline: false }
                         )
-                        .setFooter({ text: 'Data scraped langsung dari laporan harga pangan publik' });
+                        .setFooter({ text: 'Data scraped from regional market report feeds' });
 
                     return interaction.editReply({ embeds: [embed], components: getMainMenuComponents() });
                 }
 
-                return interaction.editReply({ content: `❌ Data nominal harga spesifik untuk **"${itemQuery}"** di wilayah **${regionQuery.toUpperCase()}** tidak ditemukan.` });
+                return interaction.editReply({ content: `❌ Specific price report for **"${itemQuery}"** in **${regionQuery.toUpperCase()}** was not found.` });
             } catch (err) {
-                return interaction.editReply({ content: '❌ Gagal melakukan scraping harga.' });
+                return interaction.editReply({ content: '❌ Failed to scrape commodity prices.' });
             }
         }
     }
 });
 
 // ==========================================
-// GLOBAL CRASH HANDLER (Mencegah Bot Mati Total)
+// GLOBAL CRASH HANDLERS (ALWAYS-ON PROTECTION)
 // ==========================================
+
+// Catch unhandled promise rejections (e.g., network timeouts or API errors)
 process.on('unhandledRejection', (reason, promise) => {
     console.error('⚠️ [CRASH PREVENTED] Unhandled Rejection:', reason);
 });
 
+// Catch uncaught exceptions to prevent total bot crashes
 process.on('uncaughtException', (err, origin) => {
     console.error('⚠️ [CRASH PREVENTED] Uncaught Exception:', err);
 });
 
+// Monitor uncaught exceptions
 process.on('uncaughtExceptionMonitor', (err, origin) => {
     console.error('⚠️ [CRASH PREVENTED] Exception Monitor:', err);
 });
 
+// Log Discord client errors without exiting process
 client.on('error', (error) => {
     console.error('⚠️ [DISCORD CLIENT ERROR]:', error.message);
 });
 
-// Login Bot ke Discord
+// Connect and log into Discord
 client.login(CONFIG.TOKEN);
