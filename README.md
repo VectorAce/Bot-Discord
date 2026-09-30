@@ -1,3 +1,7 @@
+> [!NOTE]
+> **Disclaimer & Localization Notice:**
+> This open-source project is configured by default to scrape and utilize public data sources tailored for **Indonesia** (such as BMKG earthquake alerts and regional commodity market feeds). If you wish to adapt this bot for another country or use your own custom datasets/APIs, you are welcome to modify the API endpoints, scraping targets, and parser logic inside `index.js`.
+
 # 🤖 Multi-Utility Discord Bot
 
 A feature-rich, interactive Discord Bot built with **Discord.js v14**, **Axios**, and **Cheerio**. Designed for real-time tracking, game specs lookup, news delivery, commodity price scraping, and automated notifications.
@@ -89,10 +93,6 @@ npm start
 Type `!menu` or `!help` in any channel where the bot has access to display the Interactive Dashboard.
 
 ---
-
-> [!NOTE]
-> **Disclaimer & Localization Notice:**
-> This open-source project is configured by default to scrape and utilize public data sources tailored for **Indonesia** (such as BMKG earthquake alerts and regional commodity market feeds). If you wish to adapt this bot for another country or use your own custom datasets/APIs, you are welcome to modify the API endpoints, scraping targets, and parser logic inside `index.js`.
 
 ## 📄 License
 
